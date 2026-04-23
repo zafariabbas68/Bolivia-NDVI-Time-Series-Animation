@@ -1,0 +1,462 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bolivia NDVI Time Series - Fixed Version</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+        
+        .header {
+            background: linear-gradient(to right, #2c3e50, #4a6491);
+            color: white;
+            padding: 25px 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .animation-container {
+            padding: 30px;
+            text-align: center;
+            background: #f8f9fa;
+            position: relative;
+        }
+        
+        .gif-frame {
+            max-width: 100%;
+            max-height: 600px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border: 1px solid #e0e0e0;
+            object-fit: contain; /* Ensures full image is shown */
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+        }
+        
+        .color-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .info-panel {
+            padding: 25px 30px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .info-panel h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #4a6491;
+            font-size: 1.4em;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .info-item {
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #4a6491;
+        }
+        
+        .info-item strong {
+            color: #2c3e50;
+            display: block;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+        
+        .info-item span {
+            color: #555;
+            font-size: 13.5px;
+        }
+        
+        .patterns {
+            background: #f0f7ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        
+        .patterns h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        .patterns ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .patterns li {
+            padding: 6px 0;
+            color: #555;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .patterns li:last-child {
+            border-bottom: none;
+        }
+        
+        .patterns li strong {
+            color: #2c3e50;
+        }
+        
+        .footer {
+            background: #2c3e50;
+            color: white;
+            padding: 20px 30px;
+            text-align: center;
+            font-size: 14px;
+        }
+        
+        .footer a {
+            color: #4a90e2;
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        
+        .month-tracker {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            overflow-x: auto;
+        }
+        
+        .month {
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 13px;
+            background: #f0f7ff;
+            color: #2c3e50;
+            transition: all 0.3s;
+            white-space: nowrap;
+            margin: 0 2px;
+        }
+        
+        .month.active {
+            background: #4a6491;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 3px 6px rgba(74, 100, 145, 0.2);
+        }
+        
+        .download-btn {
+            display: inline-block;
+            background: #27ae60;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 15px;
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .download-btn:hover {
+            background: #219653;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(33, 150, 83, 0.3);
+        }
+        
+        .controls {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .control-btn {
+            padding: 8px 16px;
+            background: #4a6491;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        
+        .control-btn:hover {
+            background: #3a5479;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .month-tracker {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                padding: 10px;
+            }
+            
+            .month {
+                padding: 6px 8px;
+                font-size: 11px;
+                min-width: 50px;
+                text-align: center;
+            }
+            
+            .gif-frame {
+                max-height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🇧🇴 Bolivia NDVI Time Series - Fixed Version</h1>
+            <p>Monthly Vegetation Patterns (2000-2020) - Full Map View</p>
+        </div>
+        
+        <div class="animation-container">
+            <img src="bolivia_ndvi_clean_fixed.gif" alt="Bolivia NDVI Animation" class="gif-frame" id="gif">
+            
+            <div class="controls">
+                <button class="control-btn" onclick="pauseGif()">⏸️ Pause</button>
+                <button class="control-btn" onclick="playGif()">▶️ Play</button>
+                <button class="control-btn" onclick="restartGif()">↺ Restart</button>
+            </div>
+            
+            <div class="month-tracker" id="monthTracker">
+                <div class="month active">JAN</div>
+                <div class="month">FEB</div>
+                <div class="month">MAR</div>
+                <div class="month">APR</div>
+                <div class="month">MAY</div>
+                <div class="month">JUN</div>
+                <div class="month">JUL</div>
+                <div class="month">AUG</div>
+                <div class="month">SEP</div>
+                <div class="month">OCT</div>
+                <div class="month">NOV</div>
+                <div class="month">DEC</div>
+            </div>
+            
+            <a href="bolivia_ndvi_clean_fixed.gif" download class="download-btn">
+                ⬇️ Download Full GIF
+            </a>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="color-dot" style="background: #8B0000;"></div>
+                <span>Barren</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-dot" style="background: #FF8C00;"></div>
+                <span>Very Dry</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-dot" style="background: #FFD700;"></div>
+                <span>Dry</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-dot" style="background: #ADFF2F;"></div>
+                <span>Sparse</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-dot" style="background: #32CD32;"></div>
+                <span>Moderate</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-dot" style="background: #228B22;"></div>
+                <span>Dense</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-dot" style="background: #006400;"></div>
+                <span>Very Dense</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-dot" style="background: #00441B;"></div>
+                <span>Rainforest</span>
+            </div>
+        </div>
+        
+        <div class="info-panel">
+            <h2>📊 About This Visualization</h2>
+            
+            <div class="info-grid">
+                <div class="info-item">
+                    <strong>Data Source</strong>
+                    <span>NASA MODIS Satellite (MODIS/061/MOD13A2)</span>
+                </div>
+                <div class="info-item">
+                    <strong>Time Period</strong>
+                    <span>2000-2020 (21 years of data)</span>
+                </div>
+                <div class="info-item">
+                    <strong>Map Fixes</strong>
+                    <span>Proper bounds, no cutoff, non-overlapping labels</span>
+                </div>
+                <div class="info-item">
+                    <strong>Created By</strong>
+                    <span>Ghulam Abbas Zafari</span>
+                </div>
+            </div>
+            
+            <div class="patterns">
+                <h3>Key Patterns</h3>
+                <ul>
+                    <li><strong>Wet Season (Nov-Apr):</strong> Green expansion from Amazon</li>
+                    <li><strong>Dry Season (May-Oct):</strong> Brown/orange tones in Altiplano</li>
+                    <li><strong>Amazon Rainforest:</strong> Consistently high vegetation</li>
+                    <li><strong>Seasonal Cycle:</strong> Clear monthly progression</li>
+                    <li><strong>Full Map View:</strong> No edges cut off</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Animation shows monthly median NDVI values across Bolivia from 2000 to 2020.</p>
+            <p>Fixed version with proper bounds and labels | Created by Ghulam Abbas Zafari</p>
+        </div>
+    </div>
+    
+    <script>
+        // Month tracker animation
+        const months = document.querySelectorAll('.month');
+        const gif = document.getElementById('gif');
+        let currentIndex = 0;
+        let isPlaying = true;
+        
+        function updateMonthTracker() {
+            if (!isPlaying) return;
+            
+            // Remove active class from all months
+            months.forEach(month => month.classList.remove('active'));
+            
+            // Add active class to current month
+            months[currentIndex].classList.add('active');
+            
+            // Move to next month
+            currentIndex = (currentIndex + 1) % months.length;
+        }
+        
+        // Change month every 1.5 seconds (matches GIF speed)
+        const monthInterval = setInterval(updateMonthTracker, 1500);
+        
+        // Control functions
+        function pauseGif() {
+            isPlaying = false;
+            gif.src = gif.src; // Force reload to pause
+            clearInterval(monthInterval);
+        }
+        
+        function playGif() {
+            if (!isPlaying) {
+                isPlaying = true;
+                gif.src = gif.src; // Force reload to play
+                setInterval(updateMonthTracker, 1500);
+            }
+        }
+        
+        function restartGif() {
+            currentIndex = 0;
+            months.forEach(month => month.classList.remove('active'));
+            months[0].classList.add('active');
+            
+            // Force GIF to restart
+            const originalSrc = gif.src;
+            gif.src = '';
+            setTimeout(() => {
+                gif.src = originalSrc;
+                isPlaying = true;
+            }, 100);
+        }
+        
+        // Initial update
+        updateMonthTracker();
+        
+        // Ensure GIF auto-plays
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                const originalSrc = gif.src;
+                gif.src = '';
+                setTimeout(() => {
+                    gif.src = originalSrc;
+                }, 100);
+            }, 500);
+        });
+    </script>
+</body>
+</html>
